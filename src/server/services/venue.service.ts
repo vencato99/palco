@@ -242,7 +242,7 @@ export async function createVenue(data: VenueInput, user: SessionPayload) {
       slug,
       status: nextStatus(data.intent, user),
       verified: user.role === 'ADMIN',
-      ownerId: user.role === 'ADMIN' ? null : user.sub,
+      ownerId: user.sub,
       photos: { create: photoRows(data) },
       amenities: { create: await amenityConnections(data.amenities) },
     },
