@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { findDuplicates, getSuggestion } from '@/server/services/suggestion.service';
@@ -21,6 +22,15 @@ export default async function SuggestionDetail({ params }: { params: { id: strin
           <p className="font-bold text-warn">Possível duplicado</p>
           <ul className="mt-1">{dups.map((d) => <li key={d.id}><Link href={`/${d.slug}`} className="underline">{d.name} — {d.city}</Link></li>)}</ul>
         </div>
+      ) : null}
+      {s.photoUrls.length ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-bold">Fotos enviadas ({s.photoUrls.length})</h2>
+          <p className="text-sm text-mute">Ao aprovar, viram as fotos do local (a primeira é a capa).</p>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {s.photoUrls.map((u) => <li key={u} className="relative aspect-[4/3] overflow-hidden rounded-xl bg-ink-3"><Image src={u} alt="" fill sizes="240px" className="object-cover" /></li>)}
+          </ul>
+        </section>
       ) : null}
       <div className="rounded-3xl border border-line bg-ink-2 p-6"><SuggestionReview s={s} /></div>
     </div>

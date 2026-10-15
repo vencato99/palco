@@ -152,9 +152,19 @@ O fluxo de dados segue sempre o mesmo caminho:
 - Uploads validam tipo e tamanho do arquivo.
 - O redirecionamento depois do login só aceita caminhos internos.
 
+## Fotos
+
+- **Onde subir no sistema:**
+  - Cadastro e edição de local: *Minha conta → Meus locais → etapa 4, Fotos*. Dá para escolher a capa e remover.
+  - Sugestão de local: */sugerir*, campo "Fotos do local", com até 10 fotos e só para quem está logado.
+  - O admin vê as fotos da sugestão e, ao aprovar, elas viram as fotos do local.
+- **Como funciona:** `POST /api/uploads` confere a assinatura real do arquivo (JPG, PNG, WEBP ou AVIF, até 8 MB) e grava no bucket com nome único (`venues/AAAA/MM/<uuid>.ext`).
+- **Entrega:** `GET /api/files/<chave>` entrega a foto com cache de 1 ano, e o `next/image` gera as versões otimizadas.
+- **Limpeza:** fotos removidas de um local são apagadas do bucket.
+- **Configuração:** variáveis `S3_*` (ver `.env.example`). Sem elas, em desenvolvimento, as fotos ficam em `./.uploads`.
+
 ## Antes de ir para produção
 
-- **Uploads:** `/api/uploads` grava em disco local. Troque por S3, R2 ou Cloudflare, mantendo a resposta `{ url }`.
 - **E-mail:** a recuperação de senha imprime o link no terminal. Conecte um provedor (Resend, SES) em `auth.service.ts`.
 - **Limite de tentativas:** adicione rate limit em `/api/auth/*` (por exemplo, Upstash Redis).
 - **Busca:** para busca textual pesada, considere `pg_trgm` e um índice GIN em `name`.
