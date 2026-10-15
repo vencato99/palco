@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getReviewBreakdown, getVenueBySlug } from '@/server/services/venue.service';
+import { getVenueBySlug } from '@/server/services/venue.service';
 import { getSession } from '@/lib/auth';
 import { RESERVED_SLUGS, SEATING_FORMATS, VENUE_TYPES } from '@/lib/constants';
 import { formatBRL, formatNumber, formatRating } from '@/lib/utils';
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VenuePage({ params }: Props) {
   const v = await load(params.slug);
   if (!v) notFound();
-  const [breakdown, session] = await Promise.all([getReviewBreakdown(v.id), getSession()]);
+  const session = await getSession();
   const price = formatBRL(v.rentalPriceCents);
   const pct = v.boxOfficePercent != null ? `${Number(v.boxOfficePercent)}%` : null;
 
@@ -80,7 +80,7 @@ export default async function VenuePage({ params }: Props) {
             <ShowsList shows={v.shows} />
           </Section>
           <Section id="avaliacoes" title={v.ratingCount ? `${formatRating(v.ratingAvg)} · ${v.ratingCount} avaliações de produtores` : 'Avaliações de produtores'}>
-            {v.ratingCount ? <RatingBars avg={breakdown} /> : null}
+            {v.ratingCount ? <RatingBars avg={v.breakdown} /> : null}
             <ReviewList reviews={v.reviews} />
           </Section>
           <Section title="Localização">

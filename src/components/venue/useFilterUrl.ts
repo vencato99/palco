@@ -1,6 +1,6 @@
 'use client';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useTransition } from 'react';
 import { filtersFromParams, filtersToParams } from '@/lib/filters';
 import type { VenueFilters } from '@/lib/validators';
 
@@ -21,5 +21,10 @@ export function useFilterUrl() {
   );
   const reset = useCallback(() => startTransition(() => router.replace(pathname, { scroll: false })), [pathname, router]);
 
+  // Enquanto a nova lista carrega, a atual fica esmaecida (via CSS em [data-filtering]).
+  useEffect(() => {
+    const el = document.documentElement;
+    if (pending) el.dataset.filtering = 'true'; else delete el.dataset.filtering;
+  }, [pending]);
   return { filters, update, reset, pending };
 }

@@ -25,10 +25,15 @@ export type VenueCardData = Prisma.VenueGetPayload<{ select: typeof venueCardSel
 
 /* ---------------------------- Leitura pública ---------------------------- */
 
-export async function searchVenues(f: VenueFilters, take = PAGE_SIZE) {
+/** Busca paginada. Cacheada por combinação de filtros (60 s) e invalidada quando qualquer local muda. */
+export const searchVenues = (f: VenueFilters, take = PAGE_SIZE) =>
+  unstable_cache(() => searchVenuesUncached(f, take), ['search-venues', JSON.stringify(f), String(take)], { tags: [VENUES_TAG], revalidate: 60 })();
+
+async function searchVenuesUncached(f: VenueFilters, take: number) {
   const where = buildVenueWhere(f);
   const [items, total] = await prisma.$transaction([
     prisma.venue.findMany({
+      relationLoadStrategy: 'join',
       where,
       orderBy: buildVenueOrder(f.sort),
       select: venueCardSelect,
@@ -43,8 +48,12 @@ export async function searchVenues(f: VenueFilters, take = PAGE_SIZE) {
 }
 
 /** Resultado agrupado por cidade e ordenado como rota (sul → norte) para montar turnês. */
-export async function searchVenuesByCity(f: VenueFilters) {
+export const searchVenuesByCity = (f: VenueFilters) =>
+  unstable_cache(() => searchVenuesByCityUncached(f), ['search-by-city', JSON.stringify(f)], { tags: [VENUES_TAG], revalidate: 60 })();
+
+async function searchVenuesByCityUncached(f: VenueFilters) {
   const items = await prisma.venue.findMany({
+    relationLoadStrategy: 'join',
     where: buildVenueWhere(f),
     orderBy: buildVenueOrder(f.sort),
     select: venueCardSelect,
@@ -63,6 +72,7 @@ export async function searchVenuesByCity(f: VenueFilters) {
 export const getFeaturedVenues = unstable_cache(
   async (city?: string) =>
     prisma.venue.findMany({
+      relationLoadStrategy: 'join',
       where: { status: 'PUBLISHED', deletedAt: null, ...(city ? { cityNormalized: normalize(city) } : {}) },
       orderBy: [{ featured: 'desc' }, { ratingAvg: 'desc' }, { ratingCount: 'desc' }],
       select: venueCardSelect,
@@ -75,6 +85,7 @@ export const getFeaturedVenues = unstable_cache(
 export const getSpotlightVenues = unstable_cache(
   async () =>
     prisma.venue.findMany({
+      relationLoadStrategy: 'join',
       where: { status: 'PUBLISHED', deletedAt: null, featured: true },
       orderBy: { ratingAvg: 'desc' },
       take: 3,
@@ -104,10 +115,15 @@ export const getTopCities = unstable_cache(
   { tags: [VENUES_TAG], revalidate: 3600 },
 );
 
+/**
+ * Perfil completo em UMA consulta (JOIN) + médias por critério em paralelo, tudo no mesmo cache.
+ * Antes: ~7 idas ao banco em sequência. Agora: 2 em paralelo, e 0 enquanto o cache vale.
+ */
 export const getVenueBySlug = (slug: string) =>
   unstable_cache(
-    () =>
-      prisma.venue.findFirst({
+    async () => {
+      const venue = await prisma.venue.findFirst({
+        relationLoadStrategy: 'join',
         where: { slug, status: 'PUBLISHED', deletedAt: null },
         include: {
           photos: { orderBy: [{ isCover: 'desc' }, { position: 'asc' }] },
@@ -121,7 +137,11 @@ export const getVenueBySlug = (slug: string) =>
             include: { author: { select: { name: true, company: true, avatarUrl: true } } },
           },
         },
-      }),
+      });
+      if (!venue) return null;
+      const breakdown = venue.ratingCount ? await getReviewBreakdown(venue.id) : {};
+      return { ...venue, breakdown };
+    },
     ['venue-by-slug', slug],
     { tags: [venueTag(slug)], revalidate: 600 },
   )();
@@ -138,6 +158,7 @@ export async function getReviewBreakdown(venueId: string) {
 
 export function listOwnerVenues(ownerId: string) {
   return prisma.venue.findMany({
+    relationLoadStrategy: 'join',
     where: { ownerId, deletedAt: null },
     orderBy: { updatedAt: 'desc' },
     select: {

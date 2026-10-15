@@ -3,6 +3,8 @@ import { Bricolage_Grotesque, Figtree } from 'next/font/google';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { NavigationProgress } from '@/components/layout/NavigationProgress';
+import { Suspense } from 'react';
 import { ToastProvider } from '@/components/ui/Toast';
 import { TourProvider } from '@/components/tour/TourProvider';
 import './globals.css';
@@ -27,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           <TourProvider>
             <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-ink">Pular para o conteúdo</a>
+            <Suspense><NavigationProgress /></Suspense>
             <Header />
             <main id="conteudo">{children}</main>
             <Footer />

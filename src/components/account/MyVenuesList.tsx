@@ -54,7 +54,7 @@ export function MyVenuesList({ rows }: { rows: Row[] }) {
         className="h-12 w-full max-w-md rounded-xl border border-line bg-ink-2 px-4 outline-none focus:border-paper" />
       <ul className="flex flex-col gap-3">
         {list.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-ink-2 p-3">
+          <li key={r.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-ink-2 p-3 transition-colors hover:border-mute/60">
             <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-ink-3">
               {r.cover ? <Image src={r.cover} alt="" fill sizes="112px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-mute"><Icon name="stage" /></div>}
             </div>

@@ -15,7 +15,7 @@ export function VenueCard({ venue, priority }: { venue: VenueCardData; priority?
   const cover = venue.photos[0]?.url;
   const price = formatBRL(venue.rentalPriceCents);
   return (
-    <Link href={`/${venue.slug}`} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-ink-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-stage">
+    <Link href={`/${venue.slug}`} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-ink-2 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-mute/60 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.8)] active:translate-y-0 active:scale-[.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-stage">
       <div className="relative aspect-[4/3] bg-ink-3">
         {cover ? (
           <Image src={cover} alt={`Foto de ${venue.name}`} fill priority={priority}
@@ -32,7 +32,7 @@ export function VenueCard({ venue, priority }: { venue: VenueCardData; priority?
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate font-display text-lg font-bold">{venue.name}</h3>
+            <h3 className="truncate font-display text-lg font-bold transition-colors group-hover:text-stage">{venue.name}</h3>
             <p className="text-sm text-mute">{venue.city}, {venue.state}</p>
           </div>
           {venue.ratingCount > 0 ? (
@@ -50,8 +50,11 @@ export function VenueCard({ venue, priority }: { venue: VenueCardData; priority?
         {venue.amenities.length ? (
           <p className="truncate text-sm text-mute">{venue.amenities.map((a) => a.amenity.label).join(', ')}</p>
         ) : null}
-        <p className="mt-auto border-t border-line pt-3 text-sm">
+        <p className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3 text-sm">
+          <span>
           {price ? <>Diária a partir de <strong>{price}</strong></> : venue.acceptsBoxOffice ? 'Divisão de bilheteria' : 'Consulte valores'}
+          </span>
+          <span className="font-semibold text-mute transition-colors group-hover:text-paper">Ver local</span>
         </p>
       </div>
     </Link>
@@ -65,8 +68,11 @@ export function VenueGrid({ children }: { children: React.ReactNode }) {
 export function VenueCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-ink-2" aria-hidden="true">
-      <div className="aspect-[4/3] animate-pulse bg-ink-3" />
-      <div className="flex flex-col gap-2 p-4"><div className="h-5 w-2/3 animate-pulse rounded bg-ink-3" /><div className="h-4 w-1/3 animate-pulse rounded bg-ink-3" /></div>
+      <div className="skeleton aspect-[4/3] rounded-none" />
+      <div className="flex flex-col gap-2.5 p-4">
+        <div className="skeleton h-5 w-2/3" /><div className="skeleton h-4 w-1/3" />
+        <div className="flex gap-1.5"><div className="skeleton h-6 w-20" /><div className="skeleton h-6 w-16" /><div className="skeleton h-6 w-24" /></div>
+      </div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ export function Chip({ active, onClick, children, className }: { active?: boolea
   return (
     <button type="button" aria-pressed={active} onClick={onClick}
       className={cn('inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm transition-colors',
-        active ? 'bg-paper font-semibold text-ink' : 'border border-line text-paper hover:border-mute', className)}>
+        active ? 'bg-paper font-semibold text-ink hover:bg-white' : 'border border-line text-paper hover:border-mute hover:bg-ink-3', className)}>
       {active ? <Icon name="check" size={14} /> : null}
       {children}
     </button>

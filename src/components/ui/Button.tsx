@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light';
 type Size = 'sm' | 'md' | 'lg';
 
-const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stage disabled:opacity-50 disabled:pointer-events-none';
+const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-[background-color,border-color,transform] duration-150 active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stage disabled:opacity-50 disabled:pointer-events-none';
 const variants: Record<Variant, string> = {
   primary: 'bg-stage text-white hover:bg-stage-dark',
   secondary: 'border border-line bg-ink-2 text-paper hover:border-mute',

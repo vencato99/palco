@@ -32,7 +32,9 @@ for (const p of ['/', '/locais', '/locais?tipo=THEATER&min=1000&uf=PR,SP', '/bus
   const r = await anon.req(p);
   check(`GET ${p} → 200`, r.status === 200, r.status);
 }
-check('slug inexistente → 404', (await anon.req('/nao-existe-esse-local')).status === 404);
+// Com loading.tsx a resposta é transmitida em streaming: o status pode sair 200, mas a página é a de "não encontrado" com noindex.
+const notFoundPage = (r) => r.status === 404 || (r.text.includes('Página não encontrada') && r.text.includes('noindex'));
+check('slug inexistente → página não encontrada', notFoundPage(await anon.req('/nao-existe-esse-local')));
 const prot = await anon.req('/minha-conta/locais');
 check('área logada sem sessão redireciona para /entrar', prot.status === 307 && prot.location?.includes('/entrar'), `${prot.status} ${prot.location}`);
 
@@ -81,7 +83,7 @@ check('validação: nome e modelo obrigatórios', r.status === 422 && r.json?.fi
 r = await owner.req('/api/venues', { method: 'POST', body: venue });
 const id = r.json?.id;
 check('criar como rascunho → DRAFT', r.status === 201 && r.json?.status === 'DRAFT', `${r.status} ${r.json?.status}`);
-check('rascunho não aparece no público', (await anon.req(`/${r.json?.slug}`)).status === 404);
+check('rascunho não aparece no público', notFoundPage(await anon.req(`/${r.json?.slug}`)));
 r = await owner.req(`/api/venues/${id}`, { method: 'PATCH', body: { ...venue, intent: 'publish', capacity: '520', amenities: ['bar', 'som', 'luz'] } });
 check('publicar (dono) → PENDING para análise', r.status === 200 && r.json?.status === 'PENDING', r.json?.status);
 r = await owner.req(`/api/venues/${id}`);
@@ -95,7 +97,7 @@ r = await owner.req(`/api/venues/${id}/restore`, { method: 'POST' });
 check('desfazer exclusão → 200', r.status === 200);
 check('restaurado volta para a lista', (await owner.req('/minha-conta/locais')).text.includes('Sala Teste E2E'));
 const adminPub = await admin.req('/api/venues', { method: 'POST', body: { ...venue, name: 'Sala Admin E2E', intent: 'publish' } });
-check('admin publica direto → PUBLISHED e visível', adminPub.json?.status === 'PUBLISHED' && (await anon.req(`/${adminPub.json.slug}`)).status === 200);
+check('admin publica direto → PUBLISHED e visível', adminPub.json?.status === 'PUBLISHED' && (await anon.req(`/${adminPub.json.slug}`)).text.includes('Sala Admin E2E'));
 await admin.req(`/api/venues/${adminPub.json?.id}`, { method: 'DELETE' });
 
 console.log('\n— Avaliações');

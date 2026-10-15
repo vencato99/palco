@@ -82,6 +82,11 @@ export function FilterBar() {
           </Chip>
         ))}
       </div>
+      {pending ? (
+        <p role="status" className="flex items-center gap-2 text-sm text-mute">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-stage border-r-transparent" /> Atualizando resultados…
+        </p>
+      ) : null}
       {modal ? <FiltersModal open={modal} onClose={() => setModal(false)} /> : null}
     </section>
   );

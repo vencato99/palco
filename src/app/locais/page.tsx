@@ -27,10 +27,10 @@ export default async function VenuesPage({ searchParams }: { searchParams: SP })
         <ButtonLink href={`/buscar${filters.q ? `?q=${encodeURIComponent(filters.q)}` : ''}`} variant="ghost" size="sm">Ver por cidade para montar turnê</ButtonLink>
       </div>
       {items.length ? (
-        <VenueGrid>
+        <div data-results><VenueGrid>
           {items.map((v, i) => <VenueCard key={v.id} venue={v} priority={i < 3} />)}
           <Suspense><LoadMore key={key} initialCursor={nextCursor} /></Suspense>
-        </VenueGrid>
+        </VenueGrid></div>
       ) : (
         <EmptyState icon="search" title="Nenhum local com esses filtros" text="Tente ampliar a capacidade, remover comodidades ou buscar em outro estado."
           action={<ButtonLink href="/locais" variant="secondary">Limpar filtros</ButtonLink>} />

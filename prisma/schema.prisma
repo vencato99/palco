@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  /// relationJoins: carrega relações com JOIN em UMA consulta (em vez de uma ida ao banco por relação)
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

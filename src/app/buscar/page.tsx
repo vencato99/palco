@@ -53,7 +53,7 @@ export default async function TourSearchPage({ searchParams }: { searchParams: {
                   </h2>
                   <ul className="flex flex-col gap-2">
                     {g.venues.map((v) => (
-                      <li key={v.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-ink-2 p-3">
+                      <li key={v.id} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-ink-2 p-3 transition-colors hover:border-mute/60 hover:bg-ink-3">
                         <div className="min-w-0 flex-1 basis-56">
                           <Link href={`/${v.slug}`} className="text-lg font-bold hover:underline">{v.name}</Link>
                           <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-mute">
