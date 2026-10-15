@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PRODUCER
+  VENUE_OWNER
+  ARTIST
+  ADMIN
+}
+
+enum VenueType {
+  THEATER
+  CONCERT_HALL
+  AUDITORIUM
+  MULTIPURPOSE
+  ARENA
+  CONVENTION_CENTER
+}
+
+enum SeatingFormat {
+  SEATED
+  STANDING
+  HYBRID
+}
+
+enum VenueStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum SuggestionStatus {
+  NEW
+  IN_REVIEW
+  NEEDS_INFO
+  APPROVED
+  REJECTED
+}
+
+enum SuggesterRelation {
+  MANAGER
+  PRODUCED_THERE
+  KNOWS_IT
+}
+
+enum RequestStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  company      String?
+  cnpj         String?
+  role         Role     @default(PRODUCER)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  venues      Venue[]               @relation("VenueOwner")
+  reviews     Review[]
+  tours       Tour[]
+  suggestions VenueSuggestion[]
+  requests    AvailabilityRequest[]
+  resets      PasswordReset[]
+}
+
+/// Token de redefinição de senha: guardamos só o hash; o token vai por e-mail.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Venue {
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  name             String
+  type             VenueType
+  description      String?
+  state            String        @db.Char(2)
+  city             String
+  cityNormalized   String
+  address          String?
+  latitude         Float?
+  longitude        Float?
+  capacity         Int
+  seatingFormat    SeatingFormat
+  acceptsRental    Boolean       @default(true)
+  acceptsBoxOffice Boolean       @default(false)
+  rentalPriceCents Int?
+  boxOfficePercent Decimal?      @db.Decimal(5, 2)
+  dressingRooms    Int           @default(0)
+  parkingSpots     Int           @default(0)
+  stageWidth       Float?
+  stageDepth       Float?
+  stageHeight      Float?
+  /// Ficha técnica livre: { som, luz, energia, varas, cargaDescarga, horarios }
+  techSpecs        Json?
+  contactName      String?
+  contactEmail     String?
+  contactPhone     String?
+  whatsapp         String?
+  website          String?
+  instagram        String?
+  status           VenueStatus   @default(DRAFT)
+  verified         Boolean       @default(false)
+  featured         Boolean       @default(false)
+  /// Agregados desnormalizados para ordenar sem JOIN
+  ratingAvg        Float         @default(0)
+  ratingCount      Int           @default(0)
+  showsCount       Int           @default(0)
+  ownerId          String?
+  owner            User?         @relation("VenueOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  photos      VenuePhoto[]
+  amenities   VenueAmenity[]
+  sections    SeatingSection[]
+  shows       PastShow[]
+  reviews     Review[]
+  tourStops   TourStop[]
+  requests    AvailabilityRequest[]
+  suggestions VenueSuggestion[]
+
+  @@index([status, deletedAt, capacity])
+  @@index([state, cityNormalized])
+  @@index([type])
+  @@index([ownerId])
+  @@index([featured, ratingAvg])
+}
+
+model VenuePhoto {
+  id       String  @id @default(cuid())
+  venueId  String
+  venue    Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  url      String
+  caption  String?
+  position Int     @default(0)
+  isCover  Boolean @default(false)
+
+  @@index([venueId, position])
+}
+
+model Amenity {
+  id     String         @id @default(cuid())
+  key    String         @unique
+  label  String
+  icon   String
+  venues VenueAmenity[]
+}
+
+model VenueAmenity {
+  venueId   String
+  amenityId String
+  venue     Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, amenityId])
+  @@index([amenityId])
+}
+
+model SeatingSection {
+  id       String @id @default(cuid())
+  venueId  String
+  venue    Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name     String
+  capacity Int
+}
+
+model PastShow {
+  id       String   @id @default(cuid())
+  venueId  String
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  title    String
+  category String
+  date     DateTime
+  audience Int?
+  soldOut  Boolean  @default(false)
+  imageUrl String?
+
+  @@index([venueId, date(sort: Desc)])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  eventName String
+  eventDate DateTime
+  overall   Int
+  technical Int
+  service   Int
+  payment   Int
+  audience  Int
+  logistics Int
+  comment   String
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([venueId, authorId, eventDate])
+  @@index([venueId, hidden, createdAt(sort: Desc)])
+}
+
+model VenueSuggestion {
+  id               String            @id @default(cuid())
+  submittedById    String?
+  submittedBy      User?             @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+  name             String
+  type             VenueType
+  state            String            @db.Char(2)
+  city             String
+  capacity         Int?
+  seatingFormat    SeatingFormat?
+  acceptsRental    Boolean?
+  acceptsBoxOffice Boolean?
+  amenityKeys      String[]
+  dressingRooms    Int?
+  photoUrls        String[]
+  contact          String?
+  relation         SuggesterRelation
+  status           SuggestionStatus  @default(NEW)
+  internalNotes    String?
+  venueId          String?
+  venue            Venue?            @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model Tour {
+  id        String     @id @default(cuid())
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  stops     TourStop[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([ownerId])
+}
+
+model TourStop {
+  id       String    @id @default(cuid())
+  tourId   String
+  tour     Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  venueId  String
+  venue    Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  position Int
+  date     DateTime?
+
+  @@unique([tourId, venueId])
+  @@index([tourId, position])
+}
+
+model AvailabilityRequest {
+  id               String        @id @default(cuid())
+  venueId          String
+  venue            Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  requesterId      String
+  requester        User          @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  date             DateTime
+  expectedAudience Int?
+  eventType        String
+  message          String?
+  status           RequestStatus @default(OPEN)
+  createdAt        DateTime      @default(now())
+
+  @@index([venueId, status])
+}
