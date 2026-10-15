@@ -4,7 +4,8 @@ const nextConfig = {
   poweredByHeader: false,
   images: {
     formats: ['image/avif', 'image/webp'],
-    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    // Só imagens do próprio site (uploads). Liberar hosts externos um a um, nunca '**'.
+    remotePatterns: [],
   },
   experimental: { serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'] },
 };
