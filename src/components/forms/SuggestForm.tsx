@@ -4,10 +4,12 @@ import type { VenueType } from '@prisma/client';
 import { AMENITIES, UFS, VENUE_TYPES } from '@/lib/constants';
 import { Button, Chip, Input, Segmented, Select } from '@/components/ui';
 import { FormError, useApi } from './useApi';
+import { PhotoUploader, type Photo } from './PhotoUploader';
+import Link from 'next/link';
 
 type Relation = 'MANAGER' | 'PRODUCED_THERE' | 'KNOWS_IT';
 
-export function SuggestForm() {
+export function SuggestForm({ loggedIn }: { loggedIn: boolean }) {
   const { call, loading, error, fields } = useApi();
   const [done, setDone] = useState(false);
   const [format, setFormat] = useState<'SEATED' | 'STANDING' | 'HYBRID'>();
@@ -15,6 +17,7 @@ export function SuggestForm() {
   const [box, setBox] = useState(false);
   const [amen, setAmen] = useState<string[]>([]);
   const [relation, setRelation] = useState<Relation>('PRODUCED_THERE');
+  const [photos, setPhotos] = useState<Photo[]>([]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,9 +26,9 @@ export function SuggestForm() {
       name: f.get('name'), type: f.get('type'), state: f.get('state'), city: f.get('city'),
       capacity: f.get('capacity') || null, dressingRooms: f.get('dressingRooms') || null, contact: f.get('contact'),
       seatingFormat: format ?? null, acceptsRental: rental || null, acceptsBoxOffice: box || null,
-      amenityKeys: amen, relation,
+      amenityKeys: amen, relation, photoUrls: photos.map((p) => p.url),
     });
-    if (r.ok) setDone(true);
+    if (r.ok) { setDone(true); setPhotos([]); }
   }
 
   if (done) return (
@@ -56,6 +59,11 @@ export function SuggestForm() {
         <div className="flex flex-wrap gap-2">
           {AMENITIES.map((a) => <Chip key={a.key} active={amen.includes(a.key)} onClick={() => setAmen((c) => (c.includes(a.key) ? c.filter((x) => x !== a.key) : [...c, a.key]))}>{a.label}</Chip>)}
         </div>
+      </fieldset>
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-1 text-sm font-semibold">Fotos do local (opcional)</legend>
+        {loggedIn ? <PhotoUploader photos={photos} onChange={setPhotos} folder="suggestions" max={10} />
+          : <p className="rounded-xl border border-dashed border-line px-4 py-3 text-sm text-mute"><Link href="/entrar?voltar=/sugerir" className="font-semibold text-paper underline">Entre na sua conta</Link> para enviar fotos junto com a sugestão.</p>}
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label="Camarins" name="dressingRooms" inputMode="numeric" />

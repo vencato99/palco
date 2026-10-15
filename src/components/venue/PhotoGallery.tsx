@@ -1,5 +1,5 @@
 'use client';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/ui/SafeImage';
 import { useState } from 'react';
 import { Icon, Modal } from '@/components/ui';
 

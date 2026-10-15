@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SuggestForm } from '@/components/forms/SuggestForm';
+import { getSession } from '@/lib/auth';
 
 export const metadata: Metadata = { title: 'Sugerir um local' };
 
@@ -9,7 +10,8 @@ const STEPS = [
   ['O local entra no ar', 'Com selo de verificado e aberto a avaliações'],
 ];
 
-export default function SuggestPage() {
+export default async function SuggestPage() {
+  const session = await getSession();
   return (
     <div className="mx-auto grid max-w-page gap-8 px-4 py-10 md:px-6 lg:grid-cols-[360px_1fr]">
       <aside className="flex flex-col gap-6 self-start rounded-3xl bg-stage p-7 text-white">
@@ -23,7 +25,7 @@ export default function SuggestPage() {
           ))}
         </ol>
       </aside>
-      <section className="rounded-3xl border border-line bg-ink-2 p-6 md:p-8"><SuggestForm /></section>
+      <section className="rounded-3xl border border-line bg-ink-2 p-6 md:p-8"><SuggestForm loggedIn={!!session} /></section>
     </div>
   );
 }

@@ -100,6 +100,26 @@ const adminPub = await admin.req('/api/venues', { method: 'POST', body: { ...ven
 check('admin publica direto → PUBLISHED e visível', adminPub.json?.status === 'PUBLISHED' && (await anon.req(`/${adminPub.json.slug}`)).text.includes('Sala Admin E2E'));
 await admin.req(`/api/venues/${adminPub.json?.id}`, { method: 'DELETE' });
 
+console.log('\n— Fotos (bucket)');
+// PNG 1x1 válido
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+const fd = new FormData(); fd.append('file', new Blob([png], { type: 'image/png' }), 'teste.png'); fd.append('folder', 'venues');
+r = await owner.req('/api/uploads', { method: 'POST', form: fd });
+check('upload de foto → 201 com URL', r.status === 201 && r.json?.url?.startsWith('/api/files/venues/'), `${r.status} ${r.text.slice(0, 80)}`);
+const photoUrl = r.json?.url;
+const served = await fetch(BASE + photoUrl);
+check('foto é servida com cache de 1 ano', served.status === 200 && served.headers.get('content-type') === 'image/png' && served.headers.get('cache-control')?.includes('immutable'), served.status);
+const fake = new FormData(); fake.append('file', new Blob(['<script>'], { type: 'image/png' }), 'x.png');
+check('arquivo que não é imagem → 415', (await owner.req('/api/uploads', { method: 'POST', form: fake })).status === 415);
+const anonFd = new FormData(); anonFd.append('file', new Blob([png], { type: 'image/png' }), 'a.png');
+check('upload sem login → 401', (await anon.req('/api/uploads', { method: 'POST', form: anonFd })).status === 401);
+check('caminho malicioso → 404', (await fetch(BASE + '/api/files/venues/%2e%2e/%2e%2e/package.json')).status === 404 && (await fetch(BASE + '/api/files/venues/2026/01/nao-existe.jpg')).status === 404);
+r = await owner.req(`/api/venues/${id}`, { method: 'PATCH', body: { ...venue, photos: [{ url: photoUrl }], coverIndex: 0 } });
+check('foto vinculada ao local', (await owner.req(`/api/venues/${id}`)).json?.photos?.[0]?.url === photoUrl);
+await owner.req(`/api/venues/${id}`, { method: 'PATCH', body: { ...venue, photos: [] } });
+await new Promise((res) => setTimeout(res, 800));
+check('foto removida do local sai do bucket', (await fetch(BASE + photoUrl)).status === 404);
+
 console.log('\n— Avaliações');
 const list = await anon.req('/api/venues?ordem=recent');
 const target = list.json.items.find((v) => v.slug !== 'teatro-araucaria-curitiba');

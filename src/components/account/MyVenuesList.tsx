@@ -1,5 +1,5 @@
 'use client';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/ui/SafeImage';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useOptimistic, useState, useTransition } from 'react';

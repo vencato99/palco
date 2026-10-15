@@ -6,6 +6,7 @@ import { buildVenueOrder, buildVenueWhere } from '@/lib/filters';
 import { PAGE_SIZE, RESERVED_SLUGS, ROUTE_ORDER } from '@/lib/constants';
 import { HttpError } from '@/lib/http';
 import { normalize, slugify } from '@/lib/utils';
+import { deleteFiles } from '@/lib/storage';
 import type { SessionPayload } from '@/lib/session';
 import type { VenueFilters, VenueInput } from '@/lib/validators';
 
@@ -252,7 +253,7 @@ export async function createVenue(data: VenueInput, user: SessionPayload) {
 }
 
 export async function updateVenue(id: string, data: VenueInput, user: SessionPayload) {
-  const current = await prisma.venue.findFirst({ where: { id, deletedAt: null }, select: { ownerId: true, status: true, slug: true, name: true, city: true } });
+  const current = await prisma.venue.findFirst({ where: { id, deletedAt: null }, select: { ownerId: true, status: true, slug: true, name: true, city: true, photos: { select: { url: true } } } });
   if (!current) throw new HttpError(404, 'Local não encontrado.');
   assertCanManage(current, user);
 
@@ -278,6 +279,9 @@ export async function updateVenue(id: string, data: VenueInput, user: SessionPay
   revalidateTag(VENUES_TAG);
   revalidateTag(venueTag(current.slug));
   if (slug !== current.slug) revalidateTag(venueTag(slug));
+  // Fotos removidas no formulário saem também do bucket (depois do commit, sem travar a resposta).
+  const kept = new Set(data.photos.map((p) => p.url));
+  void deleteFiles(current.photos.map((p) => p.url).filter((u) => !kept.has(u)));
   return venue;
 }
 

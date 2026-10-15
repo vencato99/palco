@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/ui/SafeImage';
 import Link from 'next/link';
 import type { VenueCardData } from '@/server/services/venue.service';
 import { SEATING_FORMATS, VENUE_TYPES } from '@/lib/constants';

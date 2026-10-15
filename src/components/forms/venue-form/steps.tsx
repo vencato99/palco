@@ -1,11 +1,10 @@
 'use client';
-import Image from 'next/image';
-import { useRef, useState } from 'react';
 import type { VenueType } from '@prisma/client';
 import { AMENITIES, SEATING_FORMATS, UFS, VENUE_TYPES } from '@/lib/constants';
 import { Counter, Icon, Input, Segmented, Select, Textarea, type IconName } from '@/components/ui';
 import { cn, formatNumber } from '@/lib/utils';
 import type { StepProps } from './types';
+import { PhotoUploader } from '../PhotoUploader';
 
 export function StepBasics({ d, set, errors }: StepProps) {
   return (
@@ -93,54 +92,10 @@ export function StepStructure({ d, set }: StepProps) {
 }
 
 export function StepPhotos({ d, set }: StepProps) {
-  const input = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(0);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function upload(files: FileList | null) {
-    if (!files?.length) return;
-    setErr(null); setUploading(files.length);
-    // Uploads em paralelo; cada foto que termina já aparece.
-    const done = await Promise.all([...files].map(async (file) => {
-      const body = new FormData(); body.append('file', file);
-      const res = await fetch('/api/uploads', { method: 'POST', body });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(data.error ?? 'Falha no upload.'); return null; }
-      return { url: data.url as string };
-    }));
-    setUploading(0);
-    set({ photos: [...d.photos, ...done.filter(Boolean) as { url: string }[]] });
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-mute">Recomendado: palco, plateia, fachada, camarim e foyer. JPG, PNG ou WEBP até 8 MB.</p>
-      {err ? <p role="alert" className="text-sm text-stage">{err}</p> : null}
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {d.photos.map((p, i) => (
-          <li key={p.url} className="overflow-hidden rounded-2xl border border-line">
-            <div className="relative aspect-[4/3] bg-ink-3">
-              <Image src={p.url} alt={`Foto ${i + 1}`} fill sizes="240px" className="object-cover" />
-              {i === d.coverIndex ? <span className="absolute left-2 top-2 rounded-full bg-paper px-2 py-0.5 text-xs font-bold text-ink">Capa</span> : null}
-            </div>
-            <div className="grid grid-cols-2 text-sm font-semibold">
-              <button type="button" className="h-11 border-r border-line" onClick={() => set({ coverIndex: i })}>Definir capa</button>
-              <button type="button" className="h-11 text-stage" onClick={() => {
-                const photos = d.photos.filter((_, j) => j !== i);
-                set({ photos, coverIndex: d.coverIndex === i ? 0 : d.coverIndex > i ? d.coverIndex - 1 : d.coverIndex });
-              }}>Remover</button>
-            </div>
-          </li>
-        ))}
-        <li>
-          <button type="button" onClick={() => input.current?.click()} disabled={uploading > 0}
-            className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line hover:border-mute">
-            <Icon name="upload" size={26} />
-            <span className="text-sm font-semibold">{uploading ? `Enviando ${uploading}…` : 'Adicionar fotos'}</span>
-          </button>
-          <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ''; }} />
-        </li>
-      </ul>
+      <p className="text-sm text-mute">Recomendado: palco, plateia, fachada, camarim e foyer. A primeira foto vira a capa; você pode trocar.</p>
+      <PhotoUploader photos={d.photos} onChange={(photos) => set({ photos })} coverIndex={d.coverIndex} onCover={(coverIndex) => set({ coverIndex })} />
     </div>
   );
 }
